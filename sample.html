@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>LINE用スクリプト</title>
+    <style>
+        /* スタイルを追加 */
+        body {
+            display: flex;
+            justify-content: center; /* 水平方向の中央寄せ */
+            align-items: center; /* 垂直方向の中央寄せ */
+            height: 100vh; /* ビューポートの高さいっぱいに表示 */
+        }
+
+        /* ボタンを左詰めで表示 */
+        button {
+            margin-top: 10px; /* ボタン上の余白を追加 */
+            text-align: left; /* ボタン内のテキストを左詰めに設定 */
+        }
+
+        /* テキストエリアを左詰めで表示 */
+        textarea {
+            text-align: left; /* テキストエリア内のテキストを左詰めに設定 */
+        }
+    </style>
+</head>
+<link rel="icon" href="./it_School.jpg">
+<body>
+    <div>
+        <!-- チェックボックスを追加 -->
+        【お知らせの追加】<br>
+        <input type="checkbox" id="announcementCheckbox">
+        <label for="announcementCheckbox">出席簿の押印をいただきたいので印鑑の持参をお願いします。</label><br>
+        <input type="checkbox" id="announcementCheckboxz">
+        <label for="announcementCheckboxz">本日は職員会議の関係で15時までの開所となります。完全退出のご協力お願いいたします。</label><br>
+        <!-- 日付を入力するフィールドを追加 -->
+        【日付や講座】<br>
+        <label for="dateInput">日付を選択してください:</label>
+        <input type="date" id="dateInput">
+        <br>
+        <!-- 本日の講座名を入力するフィールドを追加 -->
+        <label for="courseNameInput">本日の講座名を入力してください:</label>
+        <input type="text" id="courseNameInput">
+        <br>
+        <!-- 本日の担当講師名を入力するフィールドを追加 -->
+        <label for="instructorInput">本日の担当講師名を入力してください:</label>
+        <input type="text" id="instructorInput">
+        <br>
+        <button onclick="generateAndDisplayText()">テキスト生成</button>
+    </div>
+    <br>
+    <div>
+        <textarea id="output" rows="10" cols="50" style="width: 550px; height: 420px;"></textarea>
+        <br>
+        <button onclick="copyToClipboard()">コピー</button>
+    </div>
+</body>
+<script>
+    // テキストを生成して表示する関数
+    function generateAndDisplayText() {
+        const selectedDate = document.getElementById("dateInput").value;
+        const dateParts = selectedDate.split("-");
+        const year = dateParts[0];
+        const month = parseInt(dateParts[1], 10); // 月を数値として取得
+        const day = parseInt(dateParts[2], 10); // 日を数値として取得
+
+        const dayOfWeek = getDayOfWeek(year, month, day);
+        const weaksText = getWeaksText(dayOfWeek);
+        const formattedMonthUrl = month.toString().padStart(2, '0');    // URLを生成用
+        const formattedDayUrl = day.toString().padStart(2, '0');    // URL生成用
+        const link = `https://netlab.click/todayis/${formattedMonthUrl}${formattedDayUrl}#i`; // URLを生成
+        const courseName = document.getElementById("courseNameInput").value; // ユーザーが入力した講座名
+        const instructor = document.getElementById("instructorInput").value; // ユーザーが入力した担当講師名
+        const announcements = getAnnouncements();
+        const announcementsz = getAnnouncementz(); // announcementCheckboxzの選択状態を取得
+
+        if (dayOfWeek === "土" || dayOfWeek === "日") {
+            const outputTextarea = document.getElementById("output");
+            outputTextarea.value = "土日は開所していません。";
+            return;
+        }
+
+        // 本日の講座のテキストを生成
+        let courseText = "";
+        if (courseName) {
+            courseText = `『${courseName}』です！\n担当は${instructor}さんです！\n※Zoomからは下部のリッチメニューからご参加ください。`;
+        } else {
+            courseText = "・今週は面談週間のため、ありません。";
+        }
+
+        // 0埋め
+        const formattedMonth = month > 9 ? `${month}` : `0${month}`;
+        const formattedDay = day > 9 ? `${day}` : `0${day}`;
+
+const text = `
+おはようございます。
+${month}月${day}日、${weaksText}、${dayOfWeek}曜日の開所です。
+
+【入力してね】
+${link}
+
+【本日の講座】
+${courseText}
+
+【お知らせ】
+・通所の際は9:50になってから入室お願いいたします。
+${announcements}${announcementsz}
+【注意】
+① 在宅学習は10時の開始と15時の終了、計2回の報告必須です。
+② 訓練終了の16時までに日報記入をお願いします。
+※ ①及び②がない場合は欠席カウントとなります。
+※ 予定があり通所されない日は事前にお知らせください。
+③ 講座や企業説明に参加する際は参加表明をお願いいたします。
+
+※ 一斉送信失礼いたしました。
+`;
+
+        const outputTextarea = document.getElementById("output");
+        outputTextarea.value = text; // テキストボックスにテキストを表示
+    }
+
+    // テキストをクリップボードにコピーする関数
+    function copyToClipboard() {
+        const outputTextarea = document.getElementById("output");
+        outputTextarea.select();
+        document.execCommand("copy");
+        alert("テキストがコピーされました！");
+    }
+
+    // 今日の月を取得する関数
+    function getCurrentMonth() {
+        const currentDate = new Date();
+        const month = currentDate.getMonth() + 1;
+        return month;
+    }
+
+    // 曜日を取得する関数
+    function getDayOfWeek(year, month, day) {
+        const daysOfWeek = ["日", "月", "火", "水", "木", "金", "土"];
+        const currentDate = new Date(year, month - 1, day); // 月は0から始まるため、-1 する
+        const dayOfWeekIndex = currentDate.getDay();
+        return daysOfWeek[dayOfWeekIndex];
+    }
+
+    // 曜日に応じたテキストを取得する関数
+    function getWeaksText(dayOfWeek) {
+        switch (dayOfWeek) {
+            case "日":
+                return "週末";
+            case "月":
+                return "今週始まり";
+            case "火":
+                return "生産性の高まる";
+            case "水":
+                return "週の真ん中";
+            case "木":
+                return "今週もあと1日";
+            case "金":
+                return "ラストスパート";
+            case "土":
+                return "週末";
+            default:
+                return "";
+        }
+    }
+
+    // #iのリンクを取得する関数
+    function getLink(month, day) {
+        const formattedMonth = String(month).padStart(2, '0'); // 月をゼロ補完
+        const formattedDay = String(day).padStart(2, '0');     // 日をゼロ補完
+        return `https://netlab.click/todayis/${formattedMonth}${formattedDay}#i`;
+    }
+
+    // チェックボックスの選択状態に応じてアナウンスメントを取得する関数
+    function getAnnouncements() {
+        const checkbox = document.getElementById("announcementCheckbox");
+        if (checkbox.checked) {
+            return "・出席簿の押印をいただきたいので印鑑の持参をお願いします。\n";
+        } else {
+            return "";
+        }
+    }
+
+    // announcementCheckboxzの選択状態に応じてテキストを取得する関数
+    function getAnnouncementz() {
+        const checkbox = document.getElementById("announcementCheckboxz");
+        if (checkbox.checked) {
+            return "・本日は職員会議の関係で15時までの開所となります。完全退出のご協力お願いいたします。\n";
+        } else {
+            return "";
+        }
+    }
+
+    // テキストをクリップボードにコピーする関数
+    function copyToClipboard() {
+        const outputTextarea = document.getElementById("output");
+        const trimmedText = outputTextarea.value.trim(); // 空白をトリムしてテキストを取得
+        if (trimmedText) {
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = trimmedText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempTextArea);
+            alert("テキストがコピーされました！");
+        } else {
+            alert("コピーするテキストがありません。");
+        }
+    }
+    
+</script>
+</html>
