@@ -4,23 +4,20 @@
     <meta charset="UTF-8">
     <title>LINE用スクリプト</title>
     <style>
-        /* スタイルを追加 */
         body {
             display: flex;
-            justify-content: center; /* 水平方向の中央寄せ */
-            align-items: center; /* 垂直方向の中央寄せ */
-            height: 100vh; /* ビューポートの高さいっぱいに表示 */
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        /* ボタンを左詰めで表示 */
         button {
-            margin-top: 10px; /* ボタン上の余白を追加 */
-            text-align: left; /* ボタン内のテキストを左詰めに設定 */
+            margin-top: 10px;
+            text-align: left;
         }
 
-        /* テキストエリアを左詰めで表示 */
         textarea {
-            text-align: left; /* テキストエリア内のテキストを左詰めに設定 */
+            text-align: left;
         }
     </style>
 </head>
@@ -33,18 +30,20 @@
         <label for="announcementCheckbox">出席簿の押印をいただきたいので印鑑の持参をお願いします。</label><br>
         <input type="checkbox" id="announcementCheckboxz">
         <label for="announcementCheckboxz">本日は職員会議の関係で15時までの開所となります。完全退出のご協力お願いいたします。</label><br>
-        <!-- 日付を入力するフィールドを追加 -->
+
+        <!-- 日付や講座入力フィールドを追加 -->
         【日付や講座】<br>
         <label for="dateInput">日付を選択してください:</label>
-        <input type="date" id="dateInput">
-        <br>
-        <!-- 本日の講座名を入力するフィールドを追加 -->
+        <input type="date" id="dateInput"><br>
         <label for="courseNameInput">本日の講座名を入力してください:</label>
-        <input type="text" id="courseNameInput">
-        <br>
-        <!-- 本日の担当講師名を入力するフィールドを追加 -->
+        <input type="text" id="courseNameInput"><br>
         <label for="instructorInput">本日の担当講師名を入力してください:</label>
-        <input type="text" id="instructorInput">
+        <input type="text" id="instructorInput"><br>
+
+        <!-- チェックボックスを追加 -->
+        【Zoom】<br>
+        <input type="checkbox" id="zoomCheckbox">
+        <label for="zoomCheckbox">Zoomのリッチメニューを使用</label>
         <br>
         <button onclick="generateAndDisplayText()">テキスト生成</button>
     </div>
@@ -61,18 +60,20 @@
         const selectedDate = document.getElementById("dateInput").value;
         const dateParts = selectedDate.split("-");
         const year = dateParts[0];
-        const month = parseInt(dateParts[1], 10); // 月を数値として取得
-        const day = parseInt(dateParts[2], 10); // 日を数値として取得
+        const month = parseInt(dateParts[1], 10);
+        const day = parseInt(dateParts[2], 10);
 
         const dayOfWeek = getDayOfWeek(year, month, day);
         const weaksText = getWeaksText(dayOfWeek);
-        const formattedMonthUrl = month.toString().padStart(2, '0');    // URLを生成用
-        const formattedDayUrl = day.toString().padStart(2, '0');    // URL生成用
-        const link = `https://netlab.click/todayis/${formattedMonthUrl}${formattedDayUrl}#i`; // URLを生成
-        const courseName = document.getElementById("courseNameInput").value; // ユーザーが入力した講座名
-        const instructor = document.getElementById("instructorInput").value; // ユーザーが入力した担当講師名
+        const formattedMonthUrl = month.toString().padStart(2, '0');
+        const formattedDayUrl = day.toString().padStart(2, '0');
+        const link = `https://netlab.click/todayis/${formattedMonthUrl}${formattedDayUrl}#i`;
+
+        const courseName = document.getElementById("courseNameInput").value;
+        const instructor = document.getElementById("instructorInput").value;
+        const zoomJoin = document.getElementById("zoomCheckbox").checked;
         const announcements = getAnnouncements();
-        const announcementsz = getAnnouncementz(); // announcementCheckboxzの選択状態を取得
+        const announcementsz = getAnnouncementz();
 
         if (dayOfWeek === "土" || dayOfWeek === "日") {
             const outputTextarea = document.getElementById("output");
@@ -80,10 +81,15 @@
             return;
         }
 
-        // 本日の講座のテキストを生成
         let courseText = "";
         if (courseName) {
-            courseText = `『${courseName}』です！\n担当は${instructor}です！\n※Zoomからは下部のリッチメニューからご参加ください。`;
+            courseText = `『${courseName}』です！\n担当は${instructor}です！\n`;
+
+            if (zoomJoin) {
+                courseText += "※Zoomからは下部のリッチメニューからご参加ください。";
+            } else {
+                courseText += "※Zoom配信はありません。";
+            }
         } else {
             courseText = "・今週は面談週間のため、ありません。";
         }
@@ -92,9 +98,9 @@
         const formattedMonth = month > 9 ? `${month}` : `0${month}`;
         const formattedDay = day > 9 ? `${day}` : `0${day}`;
 
-const text = `
+        const text = `
 おはようございます。
-${month}月${day}日、${weaksText}、${dayOfWeek}曜日の開所です。
+${month}月${day}日、${weaksText}、${dayOfWeek}曜日の開所です.
 
 【入力してね】
 ${link}
@@ -104,6 +110,7 @@ ${courseText}
 
 【お知らせ】
 ・通所の際は9:50になってから入室お願いいたします。
+・朝礼夕礼はオンラインで繋ぎますので講座のURLからご参加ください
 ${announcements}${announcementsz}
 【注意】
 ① 在宅学習は10時の開始と15時の終了、計2回の報告必須です。
@@ -119,8 +126,8 @@ ${announcements}${announcementsz}
         outputTextarea.value = text; // テキストボックスにテキストを表示
     }
 
-    // テキストをクリップボードにコピーする関数
-    function copyToClipboard() {
+     // テキストをクリップボードにコピーする関数
+     function copyToClipboard() {
         const outputTextarea = document.getElementById("output");
         outputTextarea.select();
         document.execCommand("copy");
